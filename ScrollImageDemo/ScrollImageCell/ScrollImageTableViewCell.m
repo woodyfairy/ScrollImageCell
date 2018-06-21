@@ -9,22 +9,21 @@
 #import "ScrollImageTableViewCell.h"
 
 @interface ScrollImageTableViewCell()
-@property(nonatomic, weak) UITableView *tableView;
-@property(nonatomic, assign)float cellWidth;
-@property(nonatomic, assign)float cellHeight;
+//@property(nonatomic, assign)float cellWidth;
+//@property(nonatomic, assign)float cellHeight;
+@property(nonatomic, assign) BOOL addedObserver;//防止重复添加Observer
 @end
 
 @implementation ScrollImageTableViewCell
 
-- (void)awakeFromNib {
-    [super awakeFromNib];
-}
+//- (void)awakeFromNib {
+//    [super awakeFromNib];
+//}
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
     [super setSelected:selected animated:animated];
     
     // Configure the view for the selected state
 }
-
 
 -(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
     if ([super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
@@ -34,36 +33,38 @@
         [self insertSubview:self.backgroundImageView atIndex:0];
         self.textLabel.textColor = [UIColor whiteColor];
         self.backgroundImageView.contentMode = UIViewContentModeScaleAspectFill;
-//        [self.imageView setImage:[UIImage imageNamed:@"weyAD"]];
-//        NSLog(@"image:%@", self.imageView.image);
         
-        //self.backgroundColor = [UIColor greenColor];
-        //self.imageView.alpha = 0.5f;
+        _addedObserver = NO;
     }
     return self;
 }
--(void)setTableView:(UITableView *)tableView andCellHeight:(float)height{
-    self.tableView = tableView;
-    self.cellHeight = height;
-    self.cellWidth = tableView.frame.size.width;
-    
-    [self.tableView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionInitial context:nil];
+-(void)setTableView:(UITableView *)tableView{
+    if (_addedObserver) {
+        [_tableView removeObserver:self forKeyPath:@"contentOffset"];
+    }
+    _tableView = tableView;//绑定所属tableview
+    [_tableView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionInitial context:nil];
+    _addedObserver = YES;
+}
+-(float)cellHeight{
+    return self.frame.size.height;//实时获取高度，防止重用cell或者重设高度导致的变化
+}
+-(float)cellWidth{
+    return self.frame.size.width;
 }
 -(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
     [self resetImagePos];
 }
 
 -(void)dealloc{
-    [self.tableView removeObserver:self forKeyPath:@"contentOffset"];
+    [self.tableView removeObserver:self forKeyPath:@"contentOffset"];//销毁时去掉监听
 }
-
 
 -(void)resetImageSize{
     if (self.backgroundImageView.image) {
         CGSize size = self.backgroundImageView.image.size;
-        float imageHeight = size.height/size.width * _cellWidth;
-        [self.backgroundImageView setFrame:CGRectMake(0, 0, _cellWidth, MAX(imageHeight, self.cellHeight))];
-        //NSLog(@"size:%f,%f", self.backgroundImageView.frame.size.width, self.backgroundImageView.frame.size.height);
+        float imageHeight = size.height/size.width * self.cellWidth;
+        [self.backgroundImageView setFrame:CGRectMake(0, 0, self.cellWidth, MAX(imageHeight, self.cellHeight))];
     }
 }
 -(void)resetImagePos{
@@ -72,6 +73,7 @@
     float imageViewY;
     imageViewY = - (self.backgroundImageView.frame.size.height - self.cellHeight) * posScaling;
     if (self.backgroundImageView.frame.size.height > self.tableView.frame.size.height) {
+        //当图片高度大于tableView的高度时，移动到两端时固定不动，否则会漏底
         if (posScaling < 0) {
             imageViewY = - (self.frame.origin.y - self.tableView.contentOffset.y);
         }else if (posScaling > 1){

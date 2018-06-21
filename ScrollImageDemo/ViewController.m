@@ -69,16 +69,16 @@
             if (!cell) {
                 cell = [[ScrollImageTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:scrollCellID];
                 cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                //NEED
+                [cell setTableView:tableView];
             }
-            //NEED
-            [cell setTableView:tableView andCellHeight:[self tableView:tableView heightForRowAtIndexPath:indexPath]];
             
             cell.textLabel.text = [NSString stringWithFormat:@"Background: %ld", indexPath.row];
             NSString *url = self.arrImageUrl[i];
             [cell.backgroundImageView sd_setImageWithURL:[NSURL URLWithString: url] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
                 if (cell) {
                     //NEED
-                    [cell refresh];
+                    [cell refresh];//在更新图片时调用
                 }
             }];
             return cell;
@@ -97,6 +97,10 @@
     }
     cell.textLabel.text = [NSString stringWithFormat:@"Cell: %ld", indexPath.row];
     return cell;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    
 }
 
 @end
